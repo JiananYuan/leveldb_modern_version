@@ -34,6 +34,7 @@
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
+#include "example/stats.h"
 
 namespace leveldb {
 
@@ -1150,9 +1151,9 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
     mutex_.Lock();
   }
 
-  if (have_stat_update && current->UpdateStats(stats)) {
-    MaybeScheduleCompaction();
-  }
+  // if (have_stat_update && current->UpdateStats(stats)) {
+  //   MaybeScheduleCompaction();
+  // }
   mem->Unref();
   if (imm != nullptr) imm->Unref();
   current->Unref();
@@ -1174,7 +1175,7 @@ Iterator* DBImpl::NewIterator(const ReadOptions& options) {
 void DBImpl::RecordReadSample(Slice key) {
   MutexLock l(&mutex_);
   if (versions_->current()->RecordReadSample(key)) {
-    MaybeScheduleCompaction();
+    // MaybeScheduleCompaction();
   }
 }
 
@@ -1525,7 +1526,7 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   }
   if (s.ok()) {
     impl->RemoveObsoleteFiles();
-    impl->MaybeScheduleCompaction();
+    // impl->MaybeScheduleCompaction();
   }
   impl->mutex_.Unlock();
   if (s.ok()) {

@@ -8,6 +8,7 @@
 #include <cstddef>
 
 #include "leveldb/export.h"
+#include "filter_policy.h"
 
 namespace leveldb {
 
@@ -85,7 +86,8 @@ struct LEVELDB_EXPORT Options {
   // Number of open files that can be used by the DB.  You may need to
   // increase this if your database has a large working set (budget
   // one open file per 2MB of working set).
-  int max_open_files = 1000;
+  // int max_open_files = 1000;
+  int max_open_files = 65536;
 
   // Control over blocks (user data is stored in a set of blocks, and
   // a block is the unit of reading from disk).
@@ -129,7 +131,8 @@ struct LEVELDB_EXPORT Options {
   // worth switching to kNoCompression.  Even if the input data is
   // incompressible, the kSnappyCompression implementation will
   // efficiently detect that and will switch to uncompressed mode.
-  CompressionType compression = kSnappyCompression;
+  // CompressionType compression = kSnappyCompression;
+  CompressionType compression = kNoCompression;
 
   // Compression level for zstd.
   // Currently only the range [-5,22] is supported. Default is 1.
@@ -144,7 +147,8 @@ struct LEVELDB_EXPORT Options {
   // If non-null, use the specified filter policy to reduce disk reads.
   // Many applications will benefit from passing the result of
   // NewBloomFilterPolicy() here.
-  const FilterPolicy* filter_policy = nullptr;
+  // const FilterPolicy* filter_policy = nullptr;
+  const FilterPolicy* filter_policy = NewBloomFilterPolicy(10);
 };
 
 // Options that control read operations

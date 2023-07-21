@@ -18,6 +18,7 @@
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 #include "util/logging.h"
+#include "example/stats.h"
 
 namespace leveldb {
 
@@ -285,6 +286,10 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
   // Search level-0 in order from newest to oldest.
   std::vector<FileMetaData*> tmp;
   tmp.reserve(files_[0].size());
+#ifdef INTERNAL_TIMER
+  adgMod::Stats* ins = adgMod::Stats::GetInstance();
+  ins->StartTimer(0);
+#endif
   for (uint32_t i = 0; i < files_[0].size(); i++) {
     FileMetaData* f = files_[0][i];
     if (ucmp->Compare(user_key, f->smallest.user_key()) >= 0 &&
@@ -292,6 +297,9 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
       tmp.push_back(f);
     }
   }
+#ifdef INTERAL_TIMER
+  ins->PauseTimer(0);
+#endif
   if (!tmp.empty()) {
     std::sort(tmp.begin(), tmp.end(), NewestFirst);
     for (uint32_t i = 0; i < tmp.size(); i++) {
@@ -305,14 +313,22 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
   for (int level = 1; level < config::kNumLevels; level++) {
     size_t num_files = files_[level].size();
     if (num_files == 0) continue;
-
+#ifdef INTERNAL_TIMER
+    ins->StartTimer(0);
+#endif
     // Binary search to find earliest index whose largest key >= internal_key.
     uint32_t index = FindFile(vset_->icmp_, files_[level], internal_key);
     if (index < num_files) {
       FileMetaData* f = files_[level][index];
       if (ucmp->Compare(user_key, f->smallest.user_key()) < 0) {
+#ifdef INTERNAL_TIMER
+        ins->PauseTimer(0);
+#endif
         // All of "f" is past any data for user_key
       } else {
+#ifdef INTERNAL_TIMER
+        ins->PauseTimer(0);
+#endif
         if (!(*func)(arg, level, f)) {
           return;
         }

@@ -30,9 +30,17 @@ else (WIN32)
   set(LEVELDB_PLATFORM_NAME LEVELDB_PLATFORM_POSIX)
 endif (WIN32)
 
+add_compile_options(-fexceptions)
+add_compile_options(-Ofast)
+
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" ON)
 option(LEVELDB_BUILD_BENCHMARKS "Build LevelDB's benchmarks" ON)
 option(LEVELDB_INSTALL "Install LevelDB's header and library" ON)
+option(INTERNAL_TIMER_SWITCH "calculate the micro time consuming" OFF)
+
+if (INTERNAL_TIMER_SWITCH)
+  add_definitions(-DINTERNAL_TIMER)
+endif(INTERNAL_TIMER_SWITCH)
 
 include(CheckIncludeFile)
 check_include_file("unistd.h" HAVE_UNISTD_H)
@@ -190,6 +198,10 @@ target_sources(leveldb
     "util/options.cc"
     "util/random.h"
     "util/status.cc"
+    "example/timer.h"
+    "example/timer.cpp"
+    "example/stats.h"
+    "example/stats.cpp"
 
   # Only CMake 3.3+ supports PUBLIC sources in targets exported by "install".
   $<$<VERSION_GREATER:CMAKE_VERSION,3.2>:PUBLIC>
@@ -393,6 +405,8 @@ if(LEVELDB_BUILD_TESTS)
 
   leveldb_test("db/c_test.c")
   leveldb_test("example/leveldb_example.cc")
+  leveldb_test("example/exp1.cc")
+  leveldb_test("example/exp2.cc")
 
   if(NOT BUILD_SHARED_LIBS)
     # TODO(costan): This test also uses

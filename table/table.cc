@@ -14,6 +14,7 @@
 #include "table/format.h"
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
+#include "example/stats.h"
 
 namespace leveldb {
 
@@ -58,8 +59,14 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
   if (options.paranoid_checks) {
     opt.verify_checksums = true;
   }
+#ifdef INTERNAL_TIMER
+  adgMod::Stats* ins = adgMod::Stats::GetInstance();
+  ins->StartTimer(1);
+#endif
   s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
-
+#ifdef INTERNAL_TIMER
+  ins->PauseTimer(1);
+#endif
   if (s.ok()) {
     // We've successfully read the footer and the index block: we're
     // ready to serve requests.
@@ -122,9 +129,19 @@ void Table::ReadFilter(const Slice& filter_handle_value) {
     opt.verify_checksums = true;
   }
   BlockContents block;
+#ifdef INTERNAL_TIMER
+  adgMod::Stats* ins = adgMod::Stats::GetInstance();
+  ins->StartTimer(1);
+#endif
   if (!ReadBlock(rep_->file, opt, filter_handle, &block).ok()) {
+#ifdef INTERNAL_TIMER
+    ins->PauseTimer(1);
+#endif
     return;
   }
+#ifdef INTERNAL_TIMER
+  ins->PauseTimer(1);
+#endif
   if (block.heap_allocated) {
     rep_->filter_data = block.data.data();  // Will need to delete later
   }
@@ -216,17 +233,41 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k, void* arg,
                                                 const Slice&)) {
   Status s;
   Iterator* iiter = rep_->index_block->NewIterator(rep_->options.comparator);
+#ifdef INTERNAL_TIMER
+  adgMod::Stats* ins = adgMod::Stats::GetInstance();
+  ins->StartTimer(2);
+#endif
   iiter->Seek(k);
+#ifdef INTERNAL_TIMER
+  ins->PauseTimer(2);
+#endif
   if (iiter->Valid()) {
     Slice handle_value = iiter->value();
     FilterBlockReader* filter = rep_->filter;
     BlockHandle handle;
+#ifdef INTERNAL_TIMER
+    ins->StartTimer(3);
+#endif
     if (filter != nullptr && handle.DecodeFrom(&handle_value).ok() &&
         !filter->KeyMayMatch(handle.offset(), k)) {
+#ifdef INTERNAL_TIMER
+      ins->PauseTimer(3);
+#endif
       // Not found
     } else {
+#ifdef INTERNAL_TIMER
+      ins->PauseTimer(3);
+      ins->StartTimer(4);
+#endif
       Iterator* block_iter = BlockReader(this, options, iiter->value());
+#ifdef INTERNAL_TIMER
+      ins->PauseTimer(4);
+      ins->StartTimer(2);
+#endif
       block_iter->Seek(k);
+#ifdef INTERNAL_TIMER
+  ins->PauseTimer(2);
+#endif
       if (block_iter->Valid()) {
         (*handle_result)(arg, block_iter->key(), block_iter->value());
       }

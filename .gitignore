@@ -1,5 +1,6 @@
 # Editors.
 *.sw*
+.vs
 .vscode
 .DS_Store
 
@@ -7,4 +8,6 @@
 build/
 out/
 .idea/
-cmake-build-debug/
+./cmake/*
+cmake-*
+results/*.txt
